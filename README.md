@@ -6,7 +6,7 @@ This repository contains the codebase for training variational autoencoders with
 
 The code for this repository can be downloaded using
 ```
-<github clone command>
+git clone git@github.com:maxdgrogan/topographic-vae.git
 ```
 
 or from https://doi.org/10.6084/m9.figshare.c.5762372.v1.
