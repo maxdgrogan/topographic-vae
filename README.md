@@ -31,7 +31,7 @@ pip install -e .
 
 ## Training topographic VAEs
 
-All code is documented and a notebook tutorial is provided in `notebook.ipynb`. For further details please refer to the *Methods* sections of ([Blum et al 2022](https://www.biorxiv.org/content/10.1101/2021.12.10.472161v3)).
+All code is documented and a notebook tutorial is provided in `tutorial.ipynb`. For further details please refer to the *Methods* sections of ([Blum et al 2022](https://www.biorxiv.org/content/10.1101/2021.12.10.472161v3)).
 
 ## License
 
