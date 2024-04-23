@@ -31,7 +31,19 @@ pip install -e .
 
 ## Training topographic VAEs
 
-All code is documented and a notebook tutorial is provided in `tutorial.ipynb`. For further details please refer to the *Methods* sections of ([Blum et al 2022](https://www.biorxiv.org/content/10.1101/2021.12.10.472161v3)).
+All code is documented and a notebook tutorial is provided in `tutorial.ipynb`. For further details please refer to the *Methods* sections of [Blum et al 2022](https://www.biorxiv.org/content/10.1101/2021.12.10.472161v3).
+
+This notebook allows users to train models on both dummy data and the kinematic data used in [Blum et al 2022](https://www.biorxiv.org/content/10.1101/2021.12.10.472161v3) which can be downloaded [here](https://figshare.com/articles/dataset/Behavioural_kinematics_and_S1_neural_activity_datasets/17700944). The kinematic data directory should have the following structure:
+
+```
+└── data
+    └── kinematic               <- Data downloaded from figshare.
+        ├── natural             <- Natural kinematic data.
+        │   ├── C09-001.h5      <- Single-subject natural kinematic data.
+        │   └── ...
+        └── planar
+            └── planar_data.h5  <- Planar reaching kinematic data.
+``` 
 
 ## License
 
