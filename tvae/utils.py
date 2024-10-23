@@ -23,6 +23,51 @@ def mexican_hat(weighted_distance_matrix):
 
     return S - np.eye(weighted_distance_matrix.shape[0])
 
+def inverted_mexican_hat(weighted_distance_matrix):
+    """
+    Return matrix of lateral effects between neurons under Inverted Mexican Hat effect.
+
+    Args:
+        weighted_distance_matrix (ndarray): Matrix of sigma-weighted distances between neurons.
+
+    Returns:
+        ndarray: Matrix of lateral effect values between neurons.
+    """
+    S = -(1.0 - 0.5 * np.square(weighted_distance_matrix)) * np.exp(
+        -0.5 * np.square(weighted_distance_matrix)
+    )
+
+    return S - np.eye(weighted_distance_matrix.shape[0])
+
+
+def excitation_only(weighted_distance_matrix):
+    """
+    Return matrix of lateral effects between neurons under local excitatory effect.
+
+    Args:
+        weighted_distance_matrix (ndarray): Matrix of sigma-weighted distances between neurons.
+
+    Returns:
+        ndarray: Matrix of lateral effect values between neurons.
+    """
+    S = np.exp(-0.5 * np.square(weighted_distance_matrix))
+
+    return S - np.eye(weighted_distance_matrix.shape[0])
+
+
+def inhibition_only(weighted_distance_matrix):
+    """
+    Return matrix of lateral effects between neurons under local inhibitory effect.
+
+    Args:
+        weighted_distance_matrix (ndarray): Matrix of sigma-weighted distances between neurons.
+
+    Returns:
+        ndarray: Matrix of lateral effect values between neurons.
+    """
+    S = -(np.exp(-0.5 * np.square(weighted_distance_matrix)))
+
+    return S - np.eye(weighted_distance_matrix.shape[0])
 
 def locmap(latent_shape):
     """
@@ -178,6 +223,51 @@ def load_kinematic_data(path, include_angles=False, include_velocities=True, see
     # Standardise variance
     stds = torch.vstack([natural_data, planar_data]).std(axis=0)
     return natural_data / stds, planar_data / stds
+
+def pol2cart(r, theta):
+
+    x = r * np.cos(np.radians(theta))
+    y = r * np.sin(np.radians(theta))
+
+    return np.array([x, y])
+
+def plot_tuning_maps(tuning_map, idxs):
+    """
+    Plots tuning heatmaps for a set of neurons.
+
+    Args:
+        tuning_map (ndarray): array of predicted firing rates at different direction/speed combinations for a set of neurons.
+        idxs (ndarray): indexes of neurons to plot.
+    """
+    fig, axs = plt.subplots(1, len(idxs), figsize=(18, 5))
+
+    vmin, vmax = np.amin(tuning_map[:, idxs]), np.amax(tuning_map[:, idxs])
+    for i, n in enumerate(idxs):
+        im = axs[i].imshow(
+            tuning_map[:, n].reshape(51, 360),
+            aspect="auto",
+            cmap="rainbow",
+            origin="lower",
+            vmin=vmin,
+            vmax=vmax,
+        )
+        axs[i].set_ylim(0, 50)
+        axs[i].set_xlim(0, 360)
+
+    axs[0].set_ylabel("Speed (cm/s)", fontsize=25)
+    axs[0].set_xlabel("Direction (°)", fontsize=25)
+    axs[0].set_yticks([0, 25, 50])
+    axs[0].set_xticks([0, 180, 360])
+    axs[0].tick_params(labelsize=15)
+
+    for i in range(1, len(idxs)):
+        axs[i].set_xticks([])
+        axs[i].set_yticks([])
+
+    fig.subplots_adjust(right=0.8)
+    cbar_ax = fig.add_axes([0.85, 0.15, 0.02, 0.7])
+    fig.colorbar(im, cax=cbar_ax)
+    plt.show()
 
 def plot_PD_map(PDs):
     """
