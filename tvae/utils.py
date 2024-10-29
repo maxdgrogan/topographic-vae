@@ -298,3 +298,161 @@ def plot_PD_map(PDs):
     plt.imshow(np.array(PDs).reshape(80, 80), cmap=cmap)
     plt.clim([-22.5, 337.5])
     plt.colorbar(ticks=np.linspace(0, 315, 8))
+
+
+def generate_perturbation_input(natural_input):
+    """
+    Generate array of perturbation inputs, perturbing each input node over a range of values.
+
+    Args:
+        natural_input (ndarray): Array of natural movement inputs.
+
+    Returns:
+        array: Array of perturbation inputs.
+    """
+
+    perturbation_input = torch.vstack(
+        [natural_input.mean(axis=0) for _ in range(natural_input.shape[1] * 100)]
+    )
+
+    for i in range(natural_input.shape[1]):
+        mean = natural_input.mean(axis=0)[i]
+        max_val = mean + natural_input.std(axis=0)[i] * 1
+        min_val = mean - natural_input.std(axis=0)[i] * 1
+
+        perturbation_input[i * 100 : i * 100 + 100, i] = torch.linspace(
+            min_val, max_val, 100
+        )
+
+    return perturbation_input
+
+
+def generate_latent_perturbations(model, perturbation_input):
+    """
+    Generate latent activities for a given model using perturbation inputs.
+
+    Args:
+        model (nn.module): TVAE model.
+        perturbation_input (ndarray): Array of perturbation inputs.
+
+    Returns:
+        Array: Array of latent activities for each perturbation input.
+    """
+
+    model.cuda()
+    with torch.no_grad():
+        latent_perturbations = (
+            model.encoder.forward(perturbation_input.cuda()).cpu().numpy()
+        )
+    model.cpu()
+
+    return latent_perturbations
+
+
+def plot_joint_correlations(latent_perturbations, perturbation_input):
+    """
+    Plot correlations of each neuron with each input node.
+
+    Args:
+        latent_perturbations (ndarray): Array of latent activities for each perturbation input.
+        perturbation_input (ndarray): Array of perturbation inputs.
+    """
+
+    fig, axs = plt.subplots(3, 3, figsize=(10, 10))
+
+    for x in range(3):
+        for y in range(3):
+            i = 3 * x + y
+            corr_map = np.array(
+                [
+                    np.corrcoef(latent_perturbations[:, j], perturbation_input[:, i])[
+                        0, 1
+                    ]
+                    for j in range(6400)
+                ]
+            ).reshape(80, 80)
+
+            im = axs[x, y].imshow(corr_map, cmap="binary", vmin=-1, vmax=1)
+
+            axs[x, y].set_yticks([])
+            axs[x, y].set_xticks([])
+
+    axs[0, 0].set_ylabel("Shoulder", fontsize=25)
+    axs[1, 0].set_ylabel("Elbow", fontsize=25)
+    axs[2, 0].set_ylabel("Wrist", fontsize=25)
+
+    axs[2, 0].set_xlabel("X", fontsize=25)
+    axs[2, 1].set_xlabel("Z", fontsize=25)
+    axs[2, 2].set_xlabel("Y", fontsize=25)
+    plt.show()
+
+
+def joints2rgb(latent_perturbations, perturbation_input):
+    """Convert joint correlations to a rgb colour code (red=Shoulder, Green=Elbow, Blue=Wrist)
+
+    Args:
+        latent_perturbations (ndarray): Array of latent activities for each perturbation input.
+        perturbation_input (ndarray): Array of perturbation inputs.
+
+    Returns:
+        ndarray: Array of RGB values.
+    """
+
+    rgb = [
+        np.stack(
+            [
+                np.array(
+                    [
+                        np.corrcoef(
+                            latent_perturbations[:, j], perturbation_input[:, k + i]
+                        )[0, 1]
+                        for j in range(6400)
+                    ]
+                ).reshape(80, 80)
+                for i in range(3)
+            ]
+        )
+        for k in [0, 3, 6]
+    ]
+    rgb = np.stack([np.abs(x).sum(axis=0) for x in rgb])
+
+    return rgb
+
+
+def plot_joint_preference_map(rgb):
+    """
+    Plot joint preference RGB values on cortical map.
+
+    Args:
+        rgb (ndarray): Array of RGB values corresponding to joint preferences for each neuron.
+    """
+    rgb = rgb.reshape(3, -1)
+    rgb = rgb.T / rgb.max(axis=1)
+    rgb = rgb.T.reshape(3, 80, 80)
+    swapped_rgb = np.swapaxes(np.swapaxes(rgb, 0, 1), 1, 2) / rgb.max()
+
+    fig = plt.figure(figsize=(10, 10))
+    plt.imshow(swapped_rgb, interpolation="nearest")
+    plt.show()
+
+
+def plot_3D_joint_preference_scatter(rgb):
+
+    RGB = rgb.reshape(3, -1)
+    RGB_c = RGB.T / RGB.max(axis=1)
+    RGB = (RGB / RGB.sum(axis=0)) * 100
+
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(projection="3d")
+
+    ax.view_init(15, 55)
+    ax.scatter(RGB[1, :], RGB[0, :], RGB[2, :], c=RGB_c, alpha=0.5)
+
+    ax.set_xlim([0, 100])
+    ax.set_ylim([0, 100])
+    ax.set_zlim([0, 100])
+    ax.set_xlabel("Elbow (%)", fontsize=35, labelpad=20)
+    ax.set_ylabel("Shoulder (%)", fontsize=35, labelpad=20)
+    ax.set_zlabel("Wrist (%)", fontsize=35, labelpad=20)
+    ax.tick_params(labelsize=20)
+    plt.show()
